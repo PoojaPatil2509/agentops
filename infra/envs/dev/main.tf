@@ -12,10 +12,56 @@ provider "aws" {
 # ---------------------------------------------------------------------------
 # KMS key for encrypting data at rest in S3, Kinesis, etc.
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# KMS key policy — grants root account full access plus CloudWatch Logs use
+# ---------------------------------------------------------------------------
+data "aws_iam_policy_document" "kms_key_policy" {
+  # Default: root account has full access. Without this, you can lock yourself
+  # out of the key permanently — KMS keys aren't recoverable from lockout.
+  statement {
+    sid    = "EnableRootAccountAccess"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${var.aws_account_id}:root"]
+    }
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  # Grant CloudWatch Logs the ability to use the key, scoped to log groups
+  # in this account only via the EncryptionContext condition.
+  statement {
+    sid    = "AllowCloudWatchLogsUseOfKey"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+    actions = [
+      "kms:Encrypt*",
+      "kms:Decrypt*",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:Describe*"
+    ]
+    resources = ["*"]
+    condition {
+      test     = "ArnLike"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+      values   = ["arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:*"]
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# KMS key for encrypting data at rest in S3, CloudWatch Logs, etc.
+# ---------------------------------------------------------------------------
 resource "aws_kms_key" "agentops" {
   description             = "AgentOps encryption key for data at rest"
   deletion_window_in_days = 7
   enable_key_rotation     = true
+  policy                  = data.aws_iam_policy_document.kms_key_policy.json
 
   tags = {
     Name = "${var.project_name}-${var.environment}-kms"
