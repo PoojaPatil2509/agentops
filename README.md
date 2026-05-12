@@ -34,6 +34,7 @@ AWS (S3, Kinesis, Lambda, Glue, Athena, Bedrock, DynamoDB, API Gateway, Step Fun
 - **Cost discipline** under $200 AWS credit budget, with billing alarms at $50/$100/$150 and `terraform destroy` between work sessions.
 
 ## Repository Structure
+```
 agentops/
 ├── infra/                  # Terraform (modular, multi-env)
 │   └── envs/dev/           # Dev environment
@@ -42,7 +43,7 @@ agentops/
 ├── dashboard/              # React dashboard (Phase 4)
 ├── docs/                   # Architecture diagrams, ADRs
 └── .github/workflows/      # CI/CD (Phase 4)
-
+```
 ## Project Status
 
 | Phase | Scope | Status |

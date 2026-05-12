@@ -48,6 +48,7 @@ For Bedrock, select model via `AGENTOPS_BEDROCK_MODEL`:
 - `amazon.titan-text-express-v1`
 
 ## Architecture
+```
 agentops_sdk/
 ├── events.py      # Pydantic event models (TraceEvent, LLMUsage)
 ├── tracer.py      # Tracer + Trace + Span context-manager API
@@ -57,7 +58,7 @@ agentops_sdk/
 generators/
 ├── config.py          # Sample prompts for synthetic traffic
 └── run_synthetic.py   # Runs agents in a loop at a configurable rate
-
+```
 ### Event schema
 
 Each `TraceEvent` records one span of work. Key fields:
