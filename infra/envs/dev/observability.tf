@@ -128,3 +128,16 @@ resource "aws_secretsmanager_secret" "slack_webhook" {
     Component = "secrets"
   }
 }
+
+resource "aws_secretsmanager_secret" "ingest_api_key" {
+  name        = "${var.project_name}/${var.environment}/ingest-api-key"
+  description = "API key for the AgentOps ingestion endpoint (clients must send this in x-api-key header)"
+  kms_key_id  = aws_kms_key.agentops.arn
+
+  recovery_window_in_days = 7
+
+  tags = {
+    Name      = "${var.project_name}-${var.environment}-ingest-api-key"
+    Component = "secrets"
+  }
+}

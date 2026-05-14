@@ -72,3 +72,23 @@ output "slack_webhook_secret_arn" {
   description = "Secrets Manager ARN for the Slack webhook"
   value       = aws_secretsmanager_secret.slack_webhook.arn
 }
+
+output "kinesis_stream_name" {
+  description = "Kinesis Data Stream for agent events"
+  value       = aws_kinesis_stream.events.name
+}
+
+output "ingest_api_url" {
+  description = "HTTPS endpoint for the AgentOps ingestion API"
+  value       = "${aws_apigatewayv2_stage.ingest_default.invoke_url}/v1/events"
+}
+
+output "ingest_api_lambda_name" {
+  description = "Name of the ingestion Lambda function"
+  value       = aws_lambda_function.ingest_api.function_name
+}
+
+output "ingest_api_key_secret_arn" {
+  description = "Secrets Manager ARN for the ingestion API key"
+  value       = aws_secretsmanager_secret.ingest_api_key.arn
+}

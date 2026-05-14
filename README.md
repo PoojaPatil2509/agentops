@@ -29,6 +29,7 @@ AWS (S3, Kinesis, Lambda, Glue, Athena, Bedrock, DynamoDB, API Gateway, Step Fun
 - **Medallion lakehouse on S3 + Iceberg** with tiered storage (Bronze → Glacier IR at 30 days, 365-day expiration) reducing storage cost ~70% on aged data.
 - **Pluggable LLM provider abstraction** supporting Anthropic API, AWS Bedrock (Claude, Llama, Titan), and a deterministic mock provider — same agent code, swap via one env var.
 - **Streaming-first medallion** combining real-time micro-batch ingestion (Firehose) with batch transformations (Glue PySpark) and reconciliation between the two paths.
+- **Multi-shard Kinesis Data Stream** with `trace_id` partition key ensuring per-conversation ordering, KMS encryption at rest, 24-hour retention for replay safety, on-demand auto-scaling.
 - **Least-privilege IAM** with four service-specific roles (Lambda, Glue, Firehose, Step Functions), resources scoped via ARN prefixes, no wildcard permissions.
 - **Remote Terraform state** in versioned S3 + DynamoDB lock table, multi-environment structure (`envs/dev`, ready for `envs/prod`).
 - **Cost discipline** under $200 AWS credit budget, with billing alarms at $50/$100/$150 and `terraform destroy` between work sessions.
@@ -53,6 +54,8 @@ agentops/
 | Phase 1.2 | IAM roles, CloudWatch log groups, SNS, EventBridge, Secrets Manager | ✓ Complete |
 | Phase 2.1 | Agent SDK, pluggable LLM providers, synthetic traffic generator | ✓ Complete |
 | Phase 2.2 | Kinesis + Firehose + ingestion API + Bronze writes | In progress |
+| Phase 2.2a | API Gateway HTTP API + ingestion Lambda + Kinesis Data Stream | ✓ Complete |
+| Phase 2.2b | Kinesis Firehose to S3 Bronze + Glue Crawler + Athena verification | In progress |
 | Phase 3 | Glue Bronze→Silver→Gold + real-time anomaly detection | Planned |
 | Phase 4 | React dashboard, NL query, CI/CD, demo polish | Planned |
 

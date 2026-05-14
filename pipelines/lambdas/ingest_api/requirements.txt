@@ -1,0 +1,2 @@
+# boto3 is bundled in Lambda runtime — no need to package it
+# Keep this file even if empty so the build script knows where to look
