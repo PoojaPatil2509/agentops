@@ -80,7 +80,7 @@ output "kinesis_stream_name" {
 
 output "ingest_api_url" {
   description = "HTTPS endpoint for the AgentOps ingestion API"
-  value       = "${aws_apigatewayv2_stage.ingest_default.invoke_url}/v1/events"
+  value       = "${aws_apigatewayv2_api.ingest.api_endpoint}/v1/events"
 }
 
 output "ingest_api_lambda_name" {
@@ -91,4 +91,24 @@ output "ingest_api_lambda_name" {
 output "ingest_api_key_secret_arn" {
   description = "Secrets Manager ARN for the ingestion API key"
   value       = aws_secretsmanager_secret.ingest_api_key.arn
+}
+
+output "firehose_delivery_stream_name" {
+  description = "Kinesis Firehose stream delivering events to Bronze"
+  value       = aws_kinesis_firehose_delivery_stream.bronze.name
+}
+
+output "bronze_events_table" {
+  description = "Glue Catalog table for Bronze events"
+  value       = "${aws_glue_catalog_database.agentops.name}.${aws_glue_catalog_table.bronze_events.name}"
+}
+
+output "bronze_crawler_name" {
+  description = "Glue Crawler validating Bronze schema"
+  value       = aws_glue_crawler.bronze_events.name
+}
+
+output "athena_query_example" {
+  description = "Example Athena query to copy-paste into the console"
+  value       = "SELECT agent_name, COUNT(*) AS events FROM ${aws_glue_catalog_database.agentops.name}.${aws_glue_catalog_table.bronze_events.name} WHERE year = 2026 GROUP BY agent_name"
 }

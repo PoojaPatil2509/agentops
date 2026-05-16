@@ -34,6 +34,18 @@ AWS (S3, Kinesis, Lambda, Glue, Athena, Bedrock, DynamoDB, API Gateway, Step Fun
 - **Remote Terraform state** in versioned S3 + DynamoDB lock table, multi-environment structure (`envs/dev`, ready for `envs/prod`).
 - **Cost discipline** under $200 AWS credit budget, with billing alarms at $50/$100/$150 and `terraform destroy` between work sessions.
 
+## Demo: Live Pipeline Verification
+
+End-to-end traffic from a synthetic generator running on a developer laptop, queried via Athena:
+
+![Athena query results](docs/screenshots/phase-2-athena-agent-breakdown.png)
+
+The query above aggregates 10 conversations across three sample agents (support-bot,
+research-agent, code-reviewer) plus one curl smoke-test, including one intentionally-injected
+mock LLM error to validate failure propagation through the entire pipeline. End-to-end
+latency from SDK call to S3 Bronze landing: ~60 seconds (Firehose buffer window).
+Athena query latency over Bronze (Parquet, partition-pruned): 2–3 seconds.
+
 ## Repository Structure
 ```
 agentops/

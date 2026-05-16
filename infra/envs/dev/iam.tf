@@ -262,6 +262,21 @@ data "aws_iam_policy_document" "firehose_data_access" {
     ]
     resources = ["arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/aws/kinesisfirehose/*"]
   }
+
+  statement {
+    sid    = "ReadGlueSchema"
+    effect = "Allow"
+    actions = [
+      "glue:GetTable",
+      "glue:GetTableVersion",
+      "glue:GetTableVersions"
+    ]
+    resources = [
+      "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:catalog",
+      "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:database/${var.project_name}_${var.environment}",
+      "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:table/${var.project_name}_${var.environment}/*"
+    ]
+  }
 }
 
 resource "aws_iam_policy" "firehose_data_access" {

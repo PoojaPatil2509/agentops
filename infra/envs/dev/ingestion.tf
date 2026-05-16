@@ -186,3 +186,80 @@ resource "aws_lambda_permission" "apigw_invoke" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.ingest.execution_arn}/*/*"
 }
+
+# ===========================================================================
+# Kinesis Firehose — drains the Data Stream to S3 Bronze as Parquet
+# ===========================================================================
+
+resource "aws_kinesis_firehose_delivery_stream" "bronze" {
+  name        = "${var.project_name}-${var.environment}-to-bronze"
+  destination = "extended_s3"
+
+  # Source: the Kinesis Data Stream we already have
+  kinesis_source_configuration {
+    kinesis_stream_arn = aws_kinesis_stream.events.arn
+    role_arn           = aws_iam_role.firehose_exec.arn
+  }
+
+  extended_s3_configuration {
+    role_arn   = aws_iam_role.firehose_exec.arn
+    bucket_arn = aws_s3_bucket.bronze.arn
+
+    # Buffer settings: deliver every 60s or every 5MB, whichever first.
+    # Lower = faster visibility, higher = bigger more-efficient Parquet files.
+    buffering_interval = 60
+    buffering_size     = 64
+
+    # KMS encryption using our customer-managed key
+    kms_key_arn = aws_kms_key.agentops.arn
+
+    # Output prefix — Hive-style partitioning so Athena can prune
+    prefix              = "events/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    error_output_prefix = "errors/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
+
+    # Convert incoming JSON to Parquet using the Glue Catalog schema we defined
+    data_format_conversion_configuration {
+      enabled = true
+
+      input_format_configuration {
+        deserializer {
+          open_x_json_ser_de {
+            case_insensitive = false
+          }
+        }
+      }
+
+      output_format_configuration {
+        serializer {
+          parquet_ser_de {
+            compression = "GZIP"
+          }
+        }
+      }
+
+      schema_configuration {
+        database_name = aws_glue_catalog_database.agentops.name
+        table_name    = aws_glue_catalog_table.bronze_events.name
+        region        = var.aws_region
+        role_arn      = aws_iam_role.firehose_exec.arn
+        version_id    = "LATEST"
+      }
+    }
+
+    cloudwatch_logging_options {
+      enabled         = true
+      log_group_name  = aws_cloudwatch_log_group.firehose.name
+      log_stream_name = "S3Delivery"
+    }
+  }
+
+  tags = {
+    Name      = "${var.project_name}-${var.environment}-to-bronze"
+    Component = "ingestion"
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.firehose_data_access,
+    aws_glue_catalog_table.bronze_events,
+  ]
+}
