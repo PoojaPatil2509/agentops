@@ -33,6 +33,9 @@ AWS (S3, Kinesis, Lambda, Glue, Athena, Bedrock, DynamoDB, API Gateway, Step Fun
 - **Least-privilege IAM** with four service-specific roles (Lambda, Glue, Firehose, Step Functions), resources scoped via ARN prefixes, no wildcard permissions.
 - **Remote Terraform state** in versioned S3 + DynamoDB lock table, multi-environment structure (`envs/dev`, ready for `envs/prod`).
 - **Cost discipline** under $200 AWS credit budget, with billing alarms at $50/$100/$150 and `terraform destroy` between work sessions.
+- **Bronze → Silver PySpark on AWS Glue 4.0** transforms raw spans into reconstructed conversations using window-function joins, source-side deduplication by `event_id` and `trace_id`, defensive PII re-hashing, and `MERGE INTO` for true idempotency. Verified by clearing Silver, running the job twice with no new input, and confirming identical row counts.
+- **Apache Iceberg lakehouse format** in `s3://agentops-silver-pooja/warehouse/` provides ACID transactions, time-travel queries, schema evolution, and SQL `DELETE`/`UPDATE`/`MERGE` over S3 — capabilities plain Parquet cannot offer.
+- **Production debugging discipline:** caught and resolved two Spark/Glue gotchas — `spark.sql.extensions` being a static-only config (must be set via Glue's `--conf` arg, not `spark.conf.set()`), and the importance of source-side dedup before MERGE to defend against duplicate inputs.
 
 ## Demo: Live Pipeline Verification
 
@@ -45,6 +48,28 @@ research-agent, code-reviewer) plus one curl smoke-test, including one intention
 mock LLM error to validate failure propagation through the entire pipeline. End-to-end
 latency from SDK call to S3 Bronze landing: ~60 seconds (Firehose buffer window).
 Athena query latency over Bronze (Parquet, partition-pruned): 2–3 seconds.
+
+
+The medallion is now populated at two layers — raw spans in Bronze, reconstructed
+conversations in Silver. Query at the Silver layer aggregates by agent:
+
+\```sql
+SELECT
+  agent_name,
+  COUNT(*) AS conversations,
+  SUM(total_tokens) AS tokens_sum,
+  ROUND(AVG(conversation_duration_ms), 0) AS avg_duration_ms,
+  SUM(llm_error_count) AS llm_errors
+FROM silver_conversations
+GROUP BY agent_name
+ORDER BY conversations DESC;
+\```
+
+![Silver layer Athena results](docs/screenshots/phase-3-1-silver-aggregation.png)
+
+Returns per-agent rollups in under 2 seconds (Iceberg on S3 via Athena),
+including total tokens, average duration, and error counts — the shape a
+real-time agent observability dashboard needs.
 
 ## Repository Structure
 ```
@@ -67,8 +92,10 @@ agentops/
 | Phase 2.1 | Agent SDK, pluggable LLM providers, synthetic traffic generator | ✓ Complete |
 | Phase 2.2 | Kinesis + Firehose + ingestion API + Bronze writes | In progress |
 | Phase 2.2a | API Gateway HTTP API + ingestion Lambda + Kinesis Data Stream | ✓ Complete |
-| Phase 2.2b | Kinesis Firehose to S3 Bronze + Glue Crawler + Athena verification | In progress |
+| Phase 2.2b | Kinesis Firehose to S3 Bronze + Glue Crawler + Athena verification | ✓ Complete |
 | Phase 3 | Glue Bronze→Silver→Gold + real-time anomaly detection | Planned |
+| Phase 3.1 | Bronze → Silver PySpark job (Iceberg + dedup + PII + conversation reconstruction) | ✓ Complete |
+| Phase 3.2 | Silver → Gold hourly aggregations | In progress |
 | Phase 4 | React dashboard, NL query, CI/CD, demo polish | Planned |
 
 ## Getting Started

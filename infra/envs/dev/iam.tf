@@ -186,6 +186,34 @@ data "aws_iam_policy_document" "glue_data_access" {
     ]
     resources = [aws_kms_key.agentops.arn]
   }
+
+  statement {
+    sid    = "IcebergCatalogAccess"
+    effect = "Allow"
+    actions = [
+      "glue:GetDatabase",
+      "glue:GetDatabases",
+      "glue:GetTable",
+      "glue:GetTables",
+      "glue:GetTableVersion",
+      "glue:GetTableVersions",
+      "glue:CreateTable",
+      "glue:UpdateTable",
+      "glue:DeleteTable",
+      "glue:BatchCreatePartition",
+      "glue:GetPartition",
+      "glue:GetPartitions",
+      "glue:BatchGetPartition",
+      "glue:CreatePartition",
+      "glue:UpdatePartition",
+      "glue:DeletePartition"
+    ]
+    resources = [
+      "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:catalog",
+      "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:database/${var.project_name}_${var.environment}",
+      "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:table/${var.project_name}_${var.environment}/*"
+    ]
+  }
 }
 
 resource "aws_iam_policy" "glue_data_access" {
