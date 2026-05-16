@@ -112,3 +112,18 @@ output "athena_query_example" {
   description = "Example Athena query to copy-paste into the console"
   value       = "SELECT agent_name, COUNT(*) AS events FROM ${aws_glue_catalog_database.agentops.name}.${aws_glue_catalog_table.bronze_events.name} WHERE year = 2026 GROUP BY agent_name"
 }
+
+output "silver_to_gold_job_name" {
+  description = "Glue job that aggregates Silver into Gold"
+  value       = aws_glue_job.silver_to_gold.name
+}
+
+output "gold_hourly_table" {
+  description = "Gold Iceberg table — hourly per-agent aggregates"
+  value       = "${aws_glue_catalog_database.agentops.name}.gold_agent_hourly"
+}
+
+output "gold_daily_table" {
+  description = "Gold Iceberg table — daily per-agent aggregates"
+  value       = "${aws_glue_catalog_database.agentops.name}.gold_daily_summary"
+}
